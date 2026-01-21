@@ -1,0 +1,66 @@
+{
+    "prefix": " ",
+    "dataset": "vtab",
+    "memory_size": 0,
+    "memory_per_class": 0,
+    "fixed_memory": false,
+    "shuffle": true,
+    "init_cls": 10,
+    "increment": 10,
+    "model_name": "ldeprompt",
+    "backbone_type": "vit_base_patch16_224_in21k_ldeprompt",
+    "original_backbone_type": "vit_base_patch16_224_in21k",
+    "get_original_backbone": true,
+    "device": ["0"],
+    "seed": [1991,1995],
+    
+    "tuned_epoch": 20,
+    "init_lr": 0.001,
+    "batch_size": 24,
+    "weight_decay": 0,
+    "min_lr": 1e-5,
+    "optimizer": "adam",
+    "scheduler": "cosine",
+    "reinit_optimizer": true,
+
+    "global_pool": "token",
+    "head_type": "token",
+    "freeze": ["blocks", "patch_embed", "cls_token", "norm", "pos_embed"],
+
+    "pretrained": false,
+    "drop": 0.0,
+    "drop_path": 0.0,
+
+    "use_prefix_tune_for_prompt": true,
+    
+    "task_pool_size": 1,
+    "task_topk": 1,
+    "task_prompt": true,
+
+    "prompt_pool": true,
+    "pool_size": 5,
+    "length": 5,
+    "top_k": 5,
+    "initializer": "uniform",
+
+    "use_g_prompt": true,
+    "prompt_key": true, 
+    "prompt_key_init": "uniform",
+
+    "batchwise_prompt": true,
+    "embedding_key": "cls",
+    "task_prompt_key": true, 
+
+    "num_placeholder": 3,
+
+    "diversity_loss_coeff": 0.1,
+    "placeholder_loss_coeff": 0.1,
+
+    "same_key_value": false,
+
+    "crct_epochs": 30,
+    "ca_lr": 0.005,
+    "ca_storage_efficient_method": "covariance", 
+    "ca_storage_efficient_method_choices": ["covariance", "multi-centroid", "variance"],
+    "n_centroids": 10
+}
