@@ -1,0 +1,4 @@
+# Install the matching Huawei Ascend MindSpore wheel separately first.
+# See docs/ASCEND_910B.md for the CANN and mindspore-ascend installation flow.
+numpy>=1.23,<2
+Pillow>=9.0
