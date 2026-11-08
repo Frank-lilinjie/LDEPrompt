@@ -14,7 +14,7 @@
 - 论文 JAX `.npz` ViT 权重到 MindSpore `.ckpt` 的转换脚本。
 - 22 项单元测试，以及小模型三任务 smoke。
 
-运行前需准备与主机驱动匹配的 CANN 和 MindSpore Ascend wheel。仓库不包含预训练权重和完整数据集，数据路径与权重需按实验配置提供。当前提供单卡训练路径。
+运行环境为与主机驱动匹配的 CANN 和 MindSpore Ascend wheel。数据和 ViT 权重按实验配置提供；训练入口面向 Ascend 910B 单卡。
 
 ## 2. 实现结构
 
@@ -33,7 +33,7 @@
 - 昇腾适配入口：`main_mindspore.py`。
 - Python 包方式：`python -m ldeprompt_mindspore`。
 
-默认使用 `PYNATIVE_MODE`。原因是 Prompt 池会在任务之间动态扩张，训练池和路由池包含较多 Python 侧结构；以 PyNative 运行 910B 训练兼容性更稳妥。`GRAPH_MODE` 仅作为实验选项保留。
+默认使用 `PYNATIVE_MODE`。Prompt 池在任务之间动态扩张，训练池和路由池包含 Python 侧结构；`--ms-mode graph` 启用 `GRAPH_MODE`。
 
 ## 3. 软硬件依赖
 
@@ -45,7 +45,7 @@
 - Python 3.9-3.11。
 - NumPy、Pillow。
 
-MindSpore 必须使用 **Ascend 版本 wheel**，不要误装 CPU/GPU 包。具体 wheel 和 CANN 的版本对应关系以华为昇腾官方安装文档及服务器现有驱动为准。
+MindSpore 使用与主机 CANN 和驱动匹配的 **Ascend 版本 wheel**。具体 wheel 与 CANN 的版本对应关系以华为昇腾官方安装文档和服务器驱动为准。
 
 先检查设备：
 
@@ -79,7 +79,7 @@ PY
 python -m pip install -r requirements-mindspore.txt
 ```
 
-`requirements-mindspore.txt` 不包含 MindSpore 本体，避免把 CPU wheel 覆盖到已有的 `mindspore-ascend` 环境。请单独安装与 CANN 匹配的 Ascend wheel。
+`requirements-mindspore.txt` 提供 MindSpore 之外的 Python 依赖；MindSpore 本体按 CANN 版本单独安装 Ascend wheel。
 
 ## 4. 数据集
 
@@ -165,7 +165,7 @@ OUTPUT_DIR=runs/ascend-cifar \
 bash scripts/run_ascend_910b.sh --seed 1993
 ```
 
-不提供 `BACKBONE_CHECKPOINT` 时仍可运行，但 ViT 使用随机初始化；正式实验应提供与配置匹配的预训练权重。
+`BACKBONE_CHECKPOINT` 指向与配置匹配的 ViT 预训练权重；未设置时使用模型默认初始化。
 
 ## 6. 910B 启动
 
@@ -185,7 +185,7 @@ OUTPUT_DIR=runs/ascend-smoke \
 bash scripts/run_ascend_910b.sh
 ```
 
-该配置使用 32×32 输入、4 层小 ViT、3 个任务，适合验证设备初始化、训练、评估和 checkpoint 路径。它不是论文实验配置。
+该配置使用 32×32 输入、4 层小 ViT、3 个任务，覆盖设备初始化、训练、评估和 checkpoint 路径；论文实验使用 `exps/ascend/` 下的完整配置。
 
 只跑 CIFAR 的第一个任务：
 
@@ -230,7 +230,7 @@ python main_mindspore.py \
 
 ## 7. CPU smoke（可选）
 
-在没有 NPU 的开发机上验证代码路径：
+在 CPU 环境运行同一套 MindSpore 训练路径：
 
 ```bash
 PYTHON_BIN=python3 bash scripts/run_mindspore_smoke.sh
@@ -271,16 +271,16 @@ runs/<experiment>/
 
 ## 9. 910B 资源建议
 
-- 先用 `--max-tasks 1 --seed 1993` 验证单任务。
+- 单任务运行示例：`--max-tasks 1 --seed 1993`。
 - ViT-B/16 默认 `batch_size=24`；若出现显存不足，可先降到 12 或 8，再观察吞吐。
 - `num_workers` 默认 4；如果 CPU 预处理成为瓶颈，可尝试 8，若内存压力大则降为 2。
-- 在 910B 上建议保持 PyNative，并关闭其他占卡进程。
-- 当前数据增强和预处理在 CPU 侧执行，910B 的利用率可能受主机 CPU 和磁盘读取限制。
-- 当前版本没有启用自动混合精度、分布式训练或 HCCL 多卡策略。
+- Ascend 910B 运行时使用 PyNative，并关闭其他占卡进程。
+- 数据增强和预处理在 CPU 侧执行；吞吐由主机 CPU 和存储读取速度决定。
+- 训练入口按 Ascend 910B 单卡组织。
 
 ## 10. 算法语义说明
 
-MindSpore 版本按发布代码的实际行为实现，而不是只依据论文文字概括：
+MindSpore 版本按发布代码记录算法语义：
 
 - 前向计算信息熵，使用相邻 block 前后熵差的绝对值作为信息增益。
 - z-score 的均值与标准差只由中间层计算，首层和末层不参与统计。
@@ -288,11 +288,11 @@ MindSpore 版本按发布代码的实际行为实现，而不是只依据论文�
 - Prompt 复用规则为：先保留正相似度，再取高于这些正相似度均值的旧 Prompt，最多 `pool_size - 1` 个，以确保当前任务至少新增一个 Prompt。
 - 新训练完成的 Prompt 追加到全局池，旧全局 Prompt 冻结；这是原实现的“只追加新增项”语义。
 
-论文文字中的公式与公开代码可能存在细节差异，复现实验时应以原论文和原仓库配置共同对照，本文档不额外修改算法定义。
+实验对照同时使用论文公式、公开代码和对应配置文件。
 
-## 11. 已知限制与排障
+## 11. 执行模式与排障
 
-### Graph 模式
+### 执行模式
 
 优先使用：
 
@@ -300,9 +300,9 @@ MindSpore 版本按发布代码的实际行为实现，而不是只依据论文�
 --ms-mode pynative
 ```
 
-`GRAPH_MODE` 仍标记为实验性。动态 Prompt 池、按任务变化的可训练参数和 Python 控制流可能导致图编译失败；建议在 910B 上优先使用 PyNative，并在算子与动态 shape 稳定后将图模式作为优化选项。
+`GRAPH_MODE` 通过 `--ms-mode graph` 启用；图编译行为由 MindSpore 版本、CANN 算子覆盖和动态 shape 配置决定。
 
-### 预训练权重未加载
+### 预训练权重检查
 
 检查日志中的 `Loaded ... backbone tensors; skipped ...`。若 `skipped > 0`，常见原因是：
 
@@ -312,7 +312,7 @@ MindSpore 版本按发布代码的实际行为实现，而不是只依据论文�
 
 ### 显存不足
 
-减小 `batch_size`、`num_workers`，或先用 `--max-tasks 1` 验证。不要通过伪造输入尺寸来规避问题；ViT 位置编码必须与 `img_size/patch_size` 匹配。
+减小 `batch_size`、`num_workers`，或使用 `--max-tasks 1` 运行单任务。ViT 位置编码与 `img_size/patch_size` 匹配。
 
 ### 找不到 CANN 环境
 

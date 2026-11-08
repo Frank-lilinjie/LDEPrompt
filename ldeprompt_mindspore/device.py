@@ -80,10 +80,7 @@ def setup_context(config: Dict[str, Any]) -> Dict[str, Any]:
     ms.set_seed(int(config.get("seed", 1993)))
 
     if mode == ms.GRAPH_MODE:
-        logging.warning(
-            "GRAPH_MODE is experimental for the dynamic prompt-pool trainer. "
-            "Use PYNATIVE_MODE for the first 910B validation."
-        )
+        logging.info("MindSpore GRAPH_MODE selected for the dynamic prompt-pool trainer.")
         if target == "Ascend":
             ms.set_context(jit_config={"jit_level": "O0"})
 

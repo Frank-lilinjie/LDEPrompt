@@ -157,7 +157,7 @@ default_cfgs = {
     'vit_base_patch16_rpn_224': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-tpu-weights/vit_base_patch16_rpn_224-sw-3b07e89d.pth'),
 
-    # experimental (may be removed)
+    # additional ViT configurations
     'vit_base_patch32_plus_256': _cfg(url='', input_size=(3, 256, 256), crop_pct=0.95),
     'vit_base_patch16_plus_240': _cfg(url='', input_size=(3, 240, 240), crop_pct=0.95),
     'vit_small_patch16_36x1_224': _cfg(url=''),
