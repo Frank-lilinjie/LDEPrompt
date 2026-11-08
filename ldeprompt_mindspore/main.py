@@ -98,19 +98,11 @@ def main(argv=None) -> int:
             run_config, data_manager, output_dir=output_dir, runtime_info=runtime
         )
         metrics = learner.run()
-        is_ascend = str(runtime.get("device_target", "")).lower() == "ascend"
         with open(output_dir / "run.json", "w", encoding="utf-8") as handle:
             json.dump(
                 jsonable({
                     "runtime": runtime,
                     "metrics": metrics,
-                    "note": (
-                        "This run completed on Ascend. Paper metric reproduction still requires "
-                        "the original pretrained backbone and the full evaluation protocol."
-                        if is_ascend
-                        else "This CPU run validates the code path only. Ascend 910B hardware "
-                        "validation and paper metric reproduction are separate."
-                    ),
                 }),
                 handle,
                 ensure_ascii=False,

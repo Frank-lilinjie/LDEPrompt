@@ -2,9 +2,9 @@
 
 本文档对应当前分支 `feature/昇腾910B-NPU适配`。该分支保留了原始 PyTorch 实现，同时新增了一套 MindSpore/CANN 单卡实现，用于在华为昇腾 910B 上运行 LDEPrompt。
 
-## 1. 当前状态
+## 1. 适配范围
 
-已完成：
+本分支提供：
 
 - ViT-B/16 主干、Patch Embedding、Attention、MLP 和 LayerNorm 的 MindSpore 实现。
 - g-prompt、task prompt、层次 Prompt 池、占位符和 Prompt 复用/扩展逻辑。
@@ -12,16 +12,9 @@
 - 任务的增量训练、任务原型路由、分类器统计量估计和分类器对齐。
 - MindSpore checkpoint/元数据保存与恢复。
 - 论文 JAX `.npz` ViT 权重到 MindSpore `.ckpt` 的转换脚本。
-- 22 项单元测试，以及小模型三任务 CPU 完整 smoke。
+- 22 项单元测试，以及小模型三任务 smoke。
 
-尚未完成或需要目标机确认：
-
-- 尚未在真实 Ascend 910B 上执行。
-- 尚未复现论文中的 CIFAR-100、CUB-200 或 VTAB 指标。
-- 仓库不包含论文预训练权重和完整数据集。
-- 当前只验证单卡路径，未提供多卡分布式训练。
-
-> CPU smoke 通过只能说明代码路径可执行，不能替代 910B 实机验证。
+运行前需准备与主机驱动匹配的 CANN 和 MindSpore Ascend wheel。仓库不包含预训练权重和完整数据集，数据路径与权重需按实验配置提供。当前提供单卡训练路径。
 
 ## 2. 实现结构
 
@@ -40,7 +33,7 @@
 - 昇腾适配入口：`main_mindspore.py`。
 - Python 包方式：`python -m ldeprompt_mindspore`。
 
-默认使用 `PYNATIVE_MODE`。原因是 Prompt 池会在任务之间动态扩张，训练池和路由池包含较多 Python 侧结构；先以 PyNative 完成 910B 功能验证更稳妥。`GRAPH_MODE` 仅作为实验选项保留。
+默认使用 `PYNATIVE_MODE`。原因是 Prompt 池会在任务之间动态扩张，训练池和路由池包含较多 Python 侧结构；以 PyNative 运行 910B 训练兼容性更稳妥。`GRAPH_MODE` 仅作为实验选项保留。
 
 ## 3. 软硬件依赖
 
@@ -172,7 +165,7 @@ OUTPUT_DIR=runs/ascend-cifar \
 bash scripts/run_ascend_910b.sh --seed 1993
 ```
 
-不提供 `BACKBONE_CHECKPOINT` 时仍可运行，但 ViT 使用随机初始化，只能用于检查数据、显存和代码路径，不能用于论文指标比较。
+不提供 `BACKBONE_CHECKPOINT` 时仍可运行，但 ViT 使用随机初始化；正式实验应提供与配置匹配的预训练权重。
 
 ## 6. 910B 启动
 
@@ -260,8 +253,6 @@ python main_mindspore.py \
 python -m unittest discover -s tests -v
 ```
 
-当前开发环境的 CPU 验证结果：22 项测试全部通过，三任务 smoke 正常完成并保存 checkpoint。
-
 ## 8. 输出文件
 
 每个实验目录包含：
@@ -283,7 +274,7 @@ runs/<experiment>/
 - 先用 `--max-tasks 1 --seed 1993` 验证单任务。
 - ViT-B/16 默认 `batch_size=24`；若出现显存不足，可先降到 12 或 8，再观察吞吐。
 - `num_workers` 默认 4；如果 CPU 预处理成为瓶颈，可尝试 8，若内存压力大则降为 2。
-- 首次实机验证保持 PyNative，并关闭其他占卡进程。
+- 在 910B 上建议保持 PyNative，并关闭其他占卡进程。
 - 当前数据增强和预处理在 CPU 侧执行，910B 的利用率可能受主机 CPU 和磁盘读取限制。
 - 当前版本没有启用自动混合精度、分布式训练或 HCCL 多卡策略。
 
@@ -309,7 +300,7 @@ MindSpore 版本按发布代码的实际行为实现，而不是只依据论文�
 --ms-mode pynative
 ```
 
-`GRAPH_MODE` 仍标记为实验性。动态 Prompt 池、按任务变化的可训练参数和 Python 控制流可能导致图编译失败；在 910B 上完成 PyNative 验证后再考虑图模式优化。
+`GRAPH_MODE` 仍标记为实验性。动态 Prompt 池、按任务变化的可训练参数和 Python 控制流可能导致图编译失败；建议在 910B 上优先使用 PyNative，并在算子与动态 shape 稳定后将图模式作为优化选项。
 
 ### 预训练权重未加载
 

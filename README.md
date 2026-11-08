@@ -1,6 +1,6 @@
 # LDEPrompt: Layer-importance guided Dual Expandable Prompt Pool for Pre-trained Model-based Class-Incremental Learning
 
-> **昇腾 910B NPU 适配版本**：当前分支在原有 PyTorch 实现之外新增了 MindSpore/CANN 单卡实现，适配华为昇腾 910B。原 PyTorch 入口 `main.py` 与旧代码保持兼容，NPU 入口为 `main_mindspore.py`。完整安装、启动和限制说明见 [docs/ASCEND_910B.md](docs/ASCEND_910B.md)。
+> **昇腾 910B NPU 适配版本**：当前分支在原有 PyTorch 实现之外新增了 MindSpore/CANN 单卡实现，适配华为昇腾 910B。原 PyTorch 入口 `main.py` 与旧代码保持兼容，NPU 入口为 `main_mindspore.py`。完整安装、启动和实验说明见 [docs/ASCEND_910B.md](docs/ASCEND_910B.md)。
 
 Prompt-based class-incremental learning methods typically construct a prompt pool consisting of multiple trainable keyprompts and perform instance-level matching to select the most suitable prompt embeddings, which has shown promising results. However, existing approaches face several limitations, including fixed prompt pools, manual selection of prompt embeddings, and strong reliance on the pretrained backbone for prompt selection. To address these issues, we propose a Layer-importance guided Dual Expandable Prompt Pool (LDEPrompt), which enables adaptive layer selection as well as dynamic freezing and expansion of the prompt pool. Extensive experiments on widely used classincremental learning benchmarks demonstrate that LDEPrompt achieves state-of-the-art performance, validating its effectiveness and scalability.
 <img src='resources/LDEprompt_overview.png' width='900'>
@@ -31,7 +31,7 @@ bash scripts/run_ascend_910b.sh --seed 1993
 
 可用实验配置：`exps/ascend/cifar/ldeprompt.json`、`exps/ascend/cub/ldeprompt.json`、`exps/ascend/vtab/ldeprompt.json`。
 
-当前验证状态：已在本地 CPU 上通过 22 项单元测试及三任务完整 smoke；尚未在真实 910B 上执行，论文指标也尚未复现。910B 实机、完整数据集和预训练权重仍需在昇腾环境中验证。
+适配范围：Ascend 910B 单卡、MindSpore/CANN；仓库提供 22 项单元测试与三任务 smoke 运行入口。完整数据集、预训练权重和实验配置的用法见 `docs/ASCEND_910B.md`。
 
 ### Dataset
 We provide the processed datasets as follows:

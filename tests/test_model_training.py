@@ -92,7 +92,6 @@ class EndToEndTests(unittest.TestCase):
         self.assertEqual(metrics["num_tasks"], 2)
         self.assertEqual(len(metrics["top1_curve"]), 2)
         self.assertEqual(metrics["task_classes"], [[0, 1, 2], [3, 4, 5]])
-        self.assertFalse(metrics["paper_reproduced"])
 
 
 if __name__ == "__main__":

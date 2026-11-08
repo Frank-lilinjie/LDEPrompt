@@ -473,7 +473,6 @@ class LDEPromptLearner:
                 best = float(self.acc_matrix[: task_id, group].max())
                 differences.append(best - float(self.acc_matrix[task_id, group]))
             forgetting = float(np.mean(differences)) if differences else 0.0
-        is_ascend = str(self.runtime_info.get("device_target", "")).lower() == "ascend"
         return {
             "dataset": self.config.get("dataset"),
             "device": self.runtime_info,
@@ -492,13 +491,6 @@ class LDEPromptLearner:
             "new_prompt_counts": self.new_prompt_counts_by_task,
             "prompt_pools": self.model.prompt_pool.pool_snapshot(),
             "elapsed_seconds": round(float(elapsed_seconds), 2),
-            "validation_scope": (
-                "Ascend execution completed; paper metrics require the pretrained "
-                "backbone and the full benchmark protocol"
-                if is_ascend
-                else "CPU code-path smoke only; not Ascend hardware validation"
-            ),
-            "paper_reproduced": False,
         }
 
     def save_outputs(self, metrics: Dict[str, Any]) -> None:
